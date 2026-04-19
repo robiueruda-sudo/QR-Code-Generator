@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Forge — Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --ink: #0f0e0c;
+    --paper: #f4efe6;
+    --paper-2: #ebe3d4;
+    --accent: #ff4b1f;
+    --accent-2: #1a6b3f;
+    --mute: #8a8275;
+    --rule: #1a1915;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Fraunces', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body {
+    background-image:
+      radial-gradient(rgba(15,14,12,0.045) 1px, transparent 1px);
+    background-size: 18px 18px;
+    padding: 32px 24px 80px;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 14px;
+    margin-bottom: 8px;
+  }
+
+  .brand {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: clamp(28px, 4vw, 44px);
+    letter-spacing: -0.03em;
+    font-style: italic;
+  }
+
+  .brand sup {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    font-style: normal;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    top: -1.2em;
+    margin-left: 4px;
+  }
+
+  .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--mute);
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  .meta b { color: var(--ink); font-weight: 700; }
+
+  .edition {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: var(--mute);
+    padding: 6px 0 28px;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 40px;
+  }
+
+  .edition span::before { content: "— "; color: var(--accent); }
+
+  /* MAIN GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 56px;
+    align-items: start;
+  }
+
+  @media (max-width: 860px) {
+    .grid { grid-template-columns: 1fr; gap: 40px; }
+  }
+
+  /* LEFT: CONTROLS */
+  .headline {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: clamp(48px, 8vw, 92px);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    margin-bottom: 20px;
+  }
+
+  .headline em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--accent);
+  }
+
+  .lede {
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--rule);
+    max-width: 44ch;
+    margin-bottom: 36px;
+    padding-left: 16px;
+    border-left: 3px solid var(--accent);
+  }
+
+  .field {
+    margin-bottom: 24px;
+  }
+
+  .field label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 10px;
+    color: var(--ink);
+  }
+
+  .field label span {
+    color: var(--accent);
+    margin-right: 6px;
+  }
+
+  textarea, input[type="text"] {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--ink);
+    padding: 10px 0;
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    color: var(--ink);
+    outline: none;
+    resize: none;
+    transition: border-color 0.2s;
+  }
+
+  textarea {
+    min-height: 90px;
+    font-size: 17px;
+    line-height: 1.5;
+  }
+
+  textarea:focus, input[type="text"]:focus {
+    border-color: var(--accent);
+  }
+
+  textarea::placeholder, input::placeholder {
+    color: var(--mute);
+    font-style: italic;
+  }
+
+  /* BG TOGGLE */
+  .bg-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 2px solid var(--ink);
+  }
+
+  .bg-opt {
+    padding: 18px 16px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .bg-opt:first-child { border-right: 2px solid var(--ink); }
+
+  .bg-opt input { display: none; }
+
+  .swatch {
+    width: 28px;
+    height: 28px;
+    border: 1.5px solid var(--ink);
+    flex-shrink: 0;
+  }
+
+  .swatch.white { background: #fff; }
+  .swatch.transparent {
+    background-image:
+      linear-gradient(45deg, #bbb 25%, transparent 25%),
+      linear-gradient(-45deg, #bbb 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #bbb 75%),
+      linear-gradient(-45deg, transparent 75%, #bbb 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+    background-color: #fff;
+  }
+
+  .bg-opt .txt {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .bg-opt .txt strong {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 17px;
+  }
+
+  .bg-opt .txt small {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--mute);
+  }
+
+  .bg-opt:has(input:checked) {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .bg-opt:has(input:checked) .txt small { color: var(--accent); }
+  .bg-opt:has(input:checked) .swatch { border-color: var(--paper); }
+
+  /* SIZE SLIDER */
+  .size-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 2px;
+    background: var(--ink);
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    background: var(--accent);
+    border: 2px solid var(--ink);
+    cursor: pointer;
+    border-radius: 0;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    background: var(--accent);
+    border: 2px solid var(--ink);
+    cursor: pointer;
+    border-radius: 0;
+  }
+
+  .size-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 14px;
+    min-width: 80px;
+    text-align: right;
+  }
+
+  /* GENERATE BUTTON */
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 32px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 18px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 2px solid var(--ink);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .btn-primary:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .btn-secondary:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  /* RIGHT: PREVIEW */
+  .preview-col {
+    position: sticky;
+    top: 32px;
+  }
+
+  .preview-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: var(--mute);
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .preview-label .dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse 2s infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .frame {
+    background: var(--paper-2);
+    border: 2px solid var(--ink);
+    padding: 28px;
+    position: relative;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .frame::before, .frame::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--accent);
+  }
+
+  .frame::before {
+    top: -2px; left: -2px;
+    border-right: none; border-bottom: none;
+  }
+
+  .frame::after {
+    bottom: -2px; right: -2px;
+    border-left: none; border-top: none;
+  }
+
+  .qr-stage {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .qr-stage.bg-white {
+    background: #fff;
+  }
+
+  .qr-stage.bg-transparent {
+    background-image:
+      linear-gradient(45deg, #d4ccbd 25%, transparent 25%),
+      linear-gradient(-45deg, #d4ccbd 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #d4ccbd 75%),
+      linear-gradient(-45deg, transparent 75%, #d4ccbd 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    background-color: var(--paper-2);
+  }
+
+  #qrcode {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #qrcode img, #qrcode canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .placeholder {
+    text-align: center;
+    color: var(--mute);
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 18px;
+    padding: 40px 20px;
+    line-height: 1.4;
+  }
+
+  .placeholder .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 72px;
+    font-weight: 700;
+    color: var(--ink);
+    opacity: 0.08;
+    display: block;
+    line-height: 1;
+    margin-bottom: 8px;
+    font-style: normal;
+  }
+
+  .info-strip {
+    margin-top: 18px;
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--mute);
+  }
+
+  .info-strip b { color: var(--ink); font-weight: 700; }
+
+  /* FOOTER RULE */
+  .footer-rule {
+    margin-top: 60px;
+    padding-top: 14px;
+    border-top: 2px solid var(--ink);
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--mute);
+  }
+
+  .footer-rule .big {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: 14px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 14px 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border: 2px solid var(--accent);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 100;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">QR Forge<sup>/01</sup></div>
+    <div class="meta">
+      <div>Est. <b>2026</b> — Lagos / Vienna</div>
+      <div>Vol. 01 · No. 042</div>
+    </div>
+  </header>
+
+  <div class="edition">
+    <span>An Instrument For Encoding</span>
+    <span>Black Squares, Beautifully Arranged</span>
+  </div>
+
+  <main class="grid">
+
+    <section class="controls">
+      <h1 class="headline">Encode<br>the <em>ordinary</em><br>into squares.</h1>
+      <p class="lede">Paste a link, a paragraph, a promise. Forge delivers a scannable matrix you can download crisp and clean — backed by blank paper or by nothing at all.</p>
+
+      <div class="field">
+        <label><span>01 /</span> Content to encode</label>
+        <textarea id="content" placeholder="https://your-link-here.com — or any text, number, or message..."></textarea>
+      </div>
+
+      <div class="field">
+        <label><span>02 /</span> Background</label>
+        <div class="bg-toggle">
+          <label class="bg-opt">
+            <input type="radio" name="bg" value="white" checked>
+            <div class="swatch white"></div>
+            <div class="txt">
+              <strong>White</strong>
+              <small>Solid · #FFFFFF</small>
+            </div>
+          </label>
+          <label class="bg-opt">
+            <input type="radio" name="bg" value="transparent">
+            <div class="swatch transparent"></div>
+            <div class="txt">
+              <strong>Transparent</strong>
+              <small>PNG · Alpha</small>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label><span>03 /</span> Output size</label>
+        <div class="size-row">
+          <input type="range" id="size" min="256" max="1600" value="720" step="32">
+          <div class="size-val"><span id="sizeVal">720</span> PX</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" id="generateBtn">Generate</button>
+        <button class="btn btn-primary" id="downloadBtn" disabled>Download ↓</button>
+      </div>
+    </section>
+
+    <section class="preview-col">
+      <div class="preview-label">
+        <span><span class="dot"></span>Live Preview</span>
+        <span id="status">AWAITING INPUT</span>
+      </div>
+      <div class="frame">
+        <div class="qr-stage bg-white" id="stage">
+          <div class="placeholder" id="placeholder">
+            <span class="num">◲</span>
+            Your code<br>appears here.
+          </div>
+          <div id="qrcode" style="display:none;"></div>
+        </div>
+      </div>
+      <div class="info-strip">
+        <span>FMT <b id="fmtInfo">PNG</b></span>
+        <span>BG <b id="bgInfo">WHITE</b></span>
+        <span>SIZE <b id="sizeInfo">720×720</b></span>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="footer-rule">
+    <span>© QR Forge Co.</span>
+    <span class="big">Made with care, shipped without fuss.</span>
+    <span>Scan · Save · Share</span>
+  </div>
+</div>
+
+<div class="toast" id="toast">Downloaded ↓</div>
+
+<script>
+  const contentInput = document.getElementById('content');
+  const sizeSlider = document.getElementById('size');
+  const sizeVal = document.getElementById('sizeVal');
+  const sizeInfo = document.getElementById('sizeInfo');
+  const bgInfo = document.getElementById('bgInfo');
+  const stage = document.getElementById('stage');
+  const placeholder = document.getElementById('placeholder');
+  const qrContainer = document.getElementById('qrcode');
+  const generateBtn = document.getElementById('generateBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const status = document.getElementById('status');
+  const toast = document.getElementById('toast');
+
+  let currentQR = null;
+  let currentCanvas = null;
+
+  function getSelectedBg() {
+    return document.querySelector('input[name="bg"]:checked').value;
+  }
+
+  function updateBg() {
+    const bg = getSelectedBg();
+    stage.classList.remove('bg-white', 'bg-transparent');
+    stage.classList.add('bg-' + bg);
+    bgInfo.textContent = bg.toUpperCase();
+  }
+
+  sizeSlider.addEventListener('input', () => {
+    sizeVal.textContent = sizeSlider.value;
+    sizeInfo.textContent = `${sizeSlider.value}×${sizeSlider.value}`;
+  });
+
+  document.querySelectorAll('input[name="bg"]').forEach(r => {
+    r.addEventListener('change', () => {
+      updateBg();
+      if (currentQR) generateQR();
+    });
+  });
+
+  function generateQR() {
+    const text = contentInput.value.trim();
+    if (!text) {
+      status.textContent = 'NO CONTENT PROVIDED';
+      return;
+    }
+
+    const size = parseInt(sizeSlider.value);
+    qrContainer.innerHTML = '';
+
+    // Build QR on an offscreen canvas so we control background/transparency precisely
+    const qrLib = new QRCode(document.createElement('div'), {
+      text: text,
+      width: size,
+      height: size,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+
+    // qrcodejs renders to a canvas inside the temp div — grab it
+    setTimeout(() => {
+      const tempCanvas = qrLib._oDrawing._elCanvas;
+      const bg = getSelectedBg();
+
+      // Create final canvas with the right background
+      const finalCanvas = document.createElement('canvas');
+      finalCanvas.width = size;
+      finalCanvas.height = size;
+      const ctx = finalCanvas.getContext('2d');
+
+      if (bg === 'white') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+      }
+      // transparent: leave canvas empty
+
+      // Now draw only the dark modules from the source canvas
+      const srcCtx = tempCanvas.getContext('2d');
+      const srcData = srcCtx.getImageData(0, 0, size, size);
+      const dstData = ctx.getImageData(0, 0, size, size);
+      const sd = srcData.data;
+      const dd = dstData.data;
+
+      for (let i = 0; i < sd.length; i += 4) {
+        // A pixel is "dark" if it's closer to black than white
+        const luma = (sd[i] + sd[i+1] + sd[i+2]) / 3;
+        if (luma < 128) {
+          dd[i] = 0;
+          dd[i+1] = 0;
+          dd[i+2] = 0;
+          dd[i+3] = 255;
+        }
+        // else: leave destination pixel alone (white or transparent depending on bg)
+      }
+      ctx.putImageData(dstData, 0, 0);
+
+      // Display a scaled-down version in the preview
+      const displayCanvas = document.createElement('canvas');
+      const displaySize = 320;
+      displayCanvas.width = displaySize;
+      displayCanvas.height = displaySize;
+      displayCanvas.style.maxWidth = '100%';
+      displayCanvas.style.height = 'auto';
+      displayCanvas.style.imageRendering = 'pixelated';
+      const dCtx = displayCanvas.getContext('2d');
+      dCtx.imageSmoothingEnabled = false;
+      dCtx.drawImage(finalCanvas, 0, 0, displaySize, displaySize);
+
+      qrContainer.innerHTML = '';
+      qrContainer.appendChild(displayCanvas);
+      qrContainer.style.display = 'flex';
+      placeholder.style.display = 'none';
+
+      currentCanvas = finalCanvas;
+      currentQR = text;
+      downloadBtn.disabled = false;
+      status.textContent = 'READY TO DOWNLOAD';
+    }, 50);
+  }
+
+  generateBtn.addEventListener('click', generateQR);
+
+  contentInput.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      generateQR();
+    }
+  });
+
+  // Re-generate on size change if we already have a QR
+  sizeSlider.addEventListener('change', () => {
+    if (currentQR) generateQR();
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    if (!currentCanvas) return;
+    const bg = getSelectedBg();
+    const link = document.createElement('a');
+    link.download = `qr-forge-${bg}-${Date.now()}.png`;
+    link.href = currentCanvas.toDataURL('image/png');
+    link.click();
+
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  });
+
+  // init
+  updateBg();
+</script>
+</body>
+</html>
